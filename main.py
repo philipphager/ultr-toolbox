@@ -51,6 +51,16 @@ def eval_step(
     }
 
 
+def eval(state: TrainState, data_loader: DataLoader):
+    val_metrics = []
+
+    for batch in tqdm(data_loader):
+        query_id, x, y, mask, n = batch
+        val_metrics.append(eval_step(state, x, y, mask))
+
+    return pd.DataFrame(val_metrics).mean(axis=0).to_dict()
+
+
 @cache("cache/")
 def load_data(path, max_length):
     return SVMRankDataset(path, max_length)
@@ -97,13 +107,7 @@ def main():
             query_id, x, y, mask, n = batch
             model_state, loss = train_step(model_state, x, y, mask)
 
-        val_metrics = []
-
-        for batch in tqdm(val_loader):
-            query_id, x, y, mask, n = batch
-            val_metrics.append(eval_step(model_state, x, y, mask))
-
-        val_metrics = pd.DataFrame(val_metrics).mean(axis=0).to_dict()
+        val_metrics = eval(model_state, val_loader)
         _, early_stop = early_stop.update(-val_metrics["ndcg"])
         print("\nVal:", val_metrics)
 
@@ -111,13 +115,8 @@ def main():
             print("Stopping early")
             break
 
-    test_metrics = []
-
-    for batch in tqdm(test_loader):
-        query_id, x, y, mask, n = batch
-        test_metrics.append(eval_step(model_state, x, y, mask))
-
-    print("Test:", pd.DataFrame(test_metrics).mean(axis=0).to_dict())
+    test_metrics = eval(model_state, test_loader)
+    print("Test:", test_metrics)
 
 
 if __name__ == "__main__":
