@@ -1,14 +1,14 @@
 from typing import Callable
 
-import numpy as np
+import jax.numpy as jnp
 
 
 def binary_cross_entropy(
-    y_predict: np.ndarray,
-    y_true: np.ndarray,
+    y_predict: jnp.ndarray,
+    y_true: jnp.ndarray,
     aggregate: bool = True,
     eps: float = 1e-10,
-    log: Callable = np.log,
+    log: Callable = jnp.log,
 ):
     entropy_at_k = -(
         y_true * log(y_predict + eps) + (1 - y_true) * log(1 - y_predict + eps)
@@ -18,14 +18,14 @@ def binary_cross_entropy(
 
 
 def perplexity(
-    y_predict: np.ndarray,
-    y_true: np.ndarray,
+    y_predict: jnp.ndarray,
+    y_true: jnp.ndarray,
     aggregate: bool = True,
 ):
     ppl_at_k = 2 ** binary_cross_entropy(
         y_predict,
         y_true,
         aggregate=False,
-        log=np.log2,
+        log=jnp.log2,
     )
     return ppl_at_k.mean() if aggregate else ppl_at_k
