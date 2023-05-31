@@ -6,9 +6,9 @@ import optax
 import pandas as pd
 from flax.training.early_stopping import EarlyStopping
 from flax.training.train_state import TrainState
-from rich.progress import track
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
 
 from ultr_toolbox.models.click_models import PositionBasedModel, train_step, eval_step
 
@@ -64,12 +64,12 @@ if __name__ == "__main__":
     n_epochs = 10
 
     for epoch in range(n_epochs):
-        for batch in track(train_loader, description=f"Epoch: {epoch} - Train"):
+        for batch in tqdm(train_loader, f"Epoch: {epoch} - Train"):
             model_state, loss = train_step(model_state, batch)
 
         val_metrics = []
 
-        for batch in track(val_loader, f"Epoch: {epoch} - Validation"):
+        for batch in tqdm(val_loader, f"Epoch: {epoch} - Validation"):
             val_metric = eval_step(model_state, batch)
             val_metrics.append(val_metric)
 
