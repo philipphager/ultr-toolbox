@@ -31,7 +31,7 @@ class ClickDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        row = df.iloc[idx]
+        row = self.df.iloc[idx]
         x = row.doc_ids
         y = row.click.astype(float)
         return x, y
@@ -41,11 +41,25 @@ if __name__ == "__main__":
     path = "data/yandex.parquet"
     df = pd.read_parquet(path)
 
+    print(len(df))
+
     train_df, val_df = train_test_split(df)
     train = ClickDataset(train_df)
     val = ClickDataset(val_df)
-    train_loader = DataLoader(train, batch_size=128, collate_fn=np_collate)
-    val_loader = DataLoader(val, batch_size=128, collate_fn=np_collate)
+    train_loader = DataLoader(
+        train,
+        batch_size=128,
+        collate_fn=np_collate,
+        num_workers=4,
+        persistent_workers=True,
+    )
+    val_loader = DataLoader(
+        val,
+        batch_size=128,
+        collate_fn=np_collate,
+        num_workers=4,
+        persistent_workers=True,
+    )
 
     early_stop = EarlyStopping(min_delta=0.001, patience=1)
     optimizer = optax.adam(learning_rate=0.003)
@@ -74,11 +88,11 @@ if __name__ == "__main__":
             val_metrics.append(val_metric)
 
         val_metric = pd.DataFrame(val_metrics).mean(axis=0).to_dict()
-        print(f"Epoch: {epoch} - Validation", val_metric)
+        print(f"\nEpoch: {epoch} - Validation", val_metric)
         _, early_stop = early_stop.update(val_metric["perplexity"])
 
         if early_stop.should_stop:
-            print("Stopping early")
+            print("\nStopping early")
             break
 
     y_predict, debug = model_state.apply_fn(model_state.params, x)
