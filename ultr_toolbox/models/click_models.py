@@ -1,44 +1,18 @@
 from dataclasses import dataclass
-from typing import Tuple, Callable
+from typing import Tuple
 
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
 from flax.training.train_state import TrainState
 
-
-def binary_cross_entropy(
-    y_predict: jnp.ndarray,
-    y: jnp.ndarray,
-    aggregate: bool = True,
-    log: Callable = jnp.log,
-    eps: float = 1e-10,
-):
-    log_p = log(y_predict + eps)
-    log_not_p = log(1 - y_predict + eps)
-    cross_entropy = -y * log_p - (1 - y) * log_not_p
-    return cross_entropy.mean() if aggregate else cross_entropy
-
-
-def perplexity(
-    y_predict: jnp.ndarray,
-    y_true: jnp.ndarray,
-    aggregate: bool = True,
-):
-    perplexity_per_rank = 2 ** binary_cross_entropy(
-        y_predict,
-        y_true,
-        aggregate=False,
-        log=jnp.log2,
-    ).mean(axis=0)
-
-    return perplexity_per_rank.mean() if aggregate else perplexity_per_rank
+from ultr_toolbox.metrics.click_metrics import binary_cross_entropy, perplexity
 
 
 @jax.jit
 def train_step(
-    state: TrainState,
-    batch: Tuple[jnp.DeviceArray, jnp.DeviceArray],
+        state: TrainState,
+        batch: Tuple[jnp.DeviceArray, jnp.DeviceArray],
 ):
     def loss_fn(model, params, batch):
         x, y = batch
@@ -56,8 +30,8 @@ def train_step(
 
 @jax.jit
 def eval_step(
-    state: TrainState,
-    batch: Tuple[jnp.DeviceArray, jnp.DeviceArray],
+        state: TrainState,
+        batch: Tuple[jnp.DeviceArray, jnp.DeviceArray],
 ):
     x, y = batch
     y_predict, _ = state.apply_fn(state.params, x)
