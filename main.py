@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from ultr_toolbox.data import ClickDataset
-from ultr_toolbox.models.ctr import CTRTrainer, JointModel
+from ultr_toolbox.models.neural import NeuralTrainer, PositionBasedModel
 
 if __name__ == "__main__":
     path = "data/clicks.parquet"
@@ -17,9 +17,7 @@ if __name__ == "__main__":
     val_dataset = ClickDataset(val_df)
     test_dataset = ClickDataset(test_df)
 
-    model = JointModel()
-
-    trainer = CTRTrainer(model)
+    trainer = NeuralTrainer(PositionBasedModel(n_documents=100_000, n_ranks=10))
     trainer.train(train_dataset, val_dataset)
     metrics = trainer.test(test_dataset)
 

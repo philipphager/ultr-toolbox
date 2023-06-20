@@ -1,15 +1,16 @@
 from typing import Callable, Union
 
 import jax.numpy as jnp
+import numpy as np
 
 
 def binary_cross_entropy(
-    y_predict: jnp.ndarray,
-    y: jnp.ndarray,
+    y_predict: np.ndarray,
+    y: np.ndarray,
     aggregate: bool = True,
     log: Callable = jnp.log,
     eps: float = 1e-10,
-) -> Union[jnp.ndarray, float]:
+) -> Union[np.ndarray, float]:
     log_p = log(y_predict + eps)
     log_not_p = log(1 - y_predict + eps)
     cross_entropy = -y * log_p - (1 - y) * log_not_p
@@ -17,17 +18,17 @@ def binary_cross_entropy(
 
 
 def log_likelihood(
-    y_predict: jnp.ndarray,
-    y: jnp.ndarray,
-) -> Union[jnp.ndarray, float]:
+    y_predict: np.ndarray,
+    y: np.ndarray,
+) -> Union[np.ndarray, float]:
     return -binary_cross_entropy(y_predict, y)
 
 
 def perplexity(
-    y_predict: jnp.ndarray,
-    y_true: jnp.ndarray,
+    y_predict: np.ndarray,
+    y_true: np.ndarray,
     aggregate: bool = True,
-) -> Union[jnp.ndarray, float]:
+) -> Union[np.ndarray, float]:
     perplexity_per_rank = 2 ** binary_cross_entropy(
         y_predict,
         y_true,

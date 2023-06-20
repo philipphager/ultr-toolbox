@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 
 def np_collate(
-    batch: Union[np.ndarray, Iterable[np.ndarray]]
+        batch: Union[np.ndarray, Iterable[np.ndarray]]
 ) -> Union[np.ndarray, List[np.ndarray]]:
     # This collate function is taken from the JAX tutorial with PyTorch Data Loading
     # https://jax.readthedocs.io/en/latest/notebooks/Neural_Network_and_Data_Loading.html

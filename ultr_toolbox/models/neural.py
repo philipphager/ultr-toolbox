@@ -58,7 +58,7 @@ class NeuralTrainer(Trainer):
             tx=optimizer,
         )
 
-        best_model = None
+        best_model_state = None
 
         for epoch in range(self.n_epochs):
             for batch in tqdm(train_loader, f"Epoch: {epoch} - Training"):
@@ -78,13 +78,13 @@ class NeuralTrainer(Trainer):
 
             if has_improved:
                 print(f"\nEpoch: {epoch} - New best model")
-                self.model_state = model_state
+                best_model_state = model_state
 
             if early_stopping.should_stop:
                 print(f"\nEpoch: {epoch} - Stopping early")
                 break
 
-        self.model_state = best_model
+        self.model_state = best_model_state
 
     def test(self, dataset: ClickDataset) -> Dict:
         loader = self._get_dataloader(dataset, parallelize=False)
