@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import partial
-from typing import Tuple, Callable, Mapping
+from typing import Tuple, Callable, Mapping, Dict
 
 import jax
 import jax.numpy as jnp
@@ -86,7 +86,7 @@ class NeuralTrainer(Trainer):
 
         self.model_state = best_model
 
-    def test(self, dataset: ClickDataset):
+    def test(self, dataset: ClickDataset) -> Dict:
         loader = self._get_dataloader(dataset, parallelize=False)
         metrics = []
 
@@ -100,7 +100,7 @@ class NeuralTrainer(Trainer):
         dataset: ClickDataset,
         shuffle: bool = False,
         parallelize: bool = True,
-    ):
+    ) -> DataLoader:
         return DataLoader(
             dataset,
             batch_size=self.n_batch,
