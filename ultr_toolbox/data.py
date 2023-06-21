@@ -22,8 +22,8 @@ def np_collate(
 
 class ClickDataset(Dataset):
     def __init__(self, df: pd.DataFrame):
-        self.x = np.array(df.doc_ids.tolist(), dtype=int)
-        self.y = np.array(df.click.tolist(), dtype=float)
+        self.x = np.array(df.item_ids.tolist(), dtype=int)
+        self.y = np.array(df.clicks.tolist(), dtype=float)
 
     def __len__(self) -> int:
         return len(self.x)
