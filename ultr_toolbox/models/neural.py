@@ -14,7 +14,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ultr_toolbox.data import ClickDataset, np_collate
-from ultr_toolbox.metrics.click_metrics import binary_cross_entropy, perplexity
+from ultr_toolbox.metrics.click_metrics import (
+    binary_cross_entropy,
+    Perplexity,
+)
 from ultr_toolbox.models.base import Trainer
 
 
@@ -26,10 +29,11 @@ class NeuralTrainer(Trainer):
         learning_rate: float = 0.001,
         n_epochs: int = 250,
         n_batch: int = 128,
-        early_stopping_metric: str = "perplexity",
+        early_stopping_metric: str = "loss",
         n_patience: int = 3,
         n_workers: int = 4,
         random_state: int = 42,
+        verbose: bool = False,
     ):
         self.model = model
         self.optimizer = optimizer
@@ -40,6 +44,7 @@ class NeuralTrainer(Trainer):
         self.n_epochs = n_epochs
         self.n_workers = n_workers
         self.random_state = random_state
+        self.verbose = verbose
         self.model_state = None
 
     def train(self, train_dataset: ClickDataset, val_dataset: ClickDataset):
@@ -61,39 +66,41 @@ class NeuralTrainer(Trainer):
         best_model_state = None
 
         for epoch in range(self.n_epochs):
-            for batch in tqdm(train_loader, f"Epoch: {epoch} - Training"):
+            for batch in tqdm(
+                train_loader, f"Epoch: {epoch} - Training", disable=not self.verbose
+            ):
                 model_state, loss = self._train_step(model_state, batch)
 
             metrics = []
 
-            for batch in tqdm(val_loader, f"Epoch: {epoch} - Validation"):
+            for batch in tqdm(
+                val_loader, f"Epoch: {epoch} - Validation", disable=not self.verbose
+            ):
                 metrics.append(self._eval_step(model_state, batch))
 
             val_metric = pd.DataFrame(metrics).mean(axis=0).to_dict()
-            print(f"\nEpoch: {epoch} - Validation", val_metric)
-
             has_improved, early_stopping = early_stopping.update(
                 val_metric[self.early_stopping_metric]
             )
 
             if has_improved:
-                print(f"\nEpoch: {epoch} - New best model")
                 best_model_state = model_state
 
             if early_stopping.should_stop:
-                print(f"\nEpoch: {epoch} - Stopping early")
                 break
 
         self.model_state = best_model_state
 
     def test(self, dataset: ClickDataset) -> Dict:
         loader = self._get_dataloader(dataset, parallelize=False)
-        metrics = []
+        perplexity = Perplexity()
 
         for batch in tqdm(loader, "Testing"):
-            metrics.append(self._eval_step(self.model_state, batch))
+            x, y = batch
+            y_predict = self.model_state.apply_fn(self.model_state.params, x)
+            perplexity.update(y_predict, y)
 
-        return pd.DataFrame(metrics).mean(axis=0).to_dict()
+        return {"perplexity": perplexity.compute()}
 
     def _get_dataloader(
         self,
@@ -139,8 +146,7 @@ class NeuralTrainer(Trainer):
         y_predict = state.apply_fn(state.params, x)
 
         return {
-            "perplexity": perplexity(y_predict, y),
-            "cross_entropy": binary_cross_entropy(y_predict, y),
+            "loss": binary_cross_entropy(y_predict, y),
         }
 
 

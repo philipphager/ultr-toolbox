@@ -7,33 +7,32 @@ import numpy as np
 def binary_cross_entropy(
     y_predict: np.ndarray,
     y: np.ndarray,
-    aggregate: bool = True,
     log: Callable = jnp.log,
     eps: float = 1e-10,
 ) -> Union[np.ndarray, float]:
     log_p = log(y_predict + eps)
     log_not_p = log(1 - y_predict + eps)
     cross_entropy = -y * log_p - (1 - y) * log_not_p
-    return cross_entropy.mean() if aggregate else cross_entropy
+
+    return cross_entropy.mean()
 
 
-def log_likelihood(
-    y_predict: np.ndarray,
-    y: np.ndarray,
-) -> Union[np.ndarray, float]:
-    return -binary_cross_entropy(y_predict, y)
+class Perplexity:
+    def __init__(self):
+        self.entropy = None
+        self.n_sessions = 0
 
+    def update(self, y_predict: np.ndarray, y: np.ndarray, eps: float = 1e-10):
+        y_predict = np.atleast_2d(y_predict)
+        y = np.atleast_2d(y)
 
-def perplexity(
-    y_predict: np.ndarray,
-    y_true: np.ndarray,
-    aggregate: bool = True,
-) -> Union[np.ndarray, float]:
-    perplexity_per_rank = 2 ** binary_cross_entropy(
-        y_predict,
-        y_true,
-        aggregate=False,
-        log=jnp.log2,
-    ).mean(axis=0)
+        log_p = np.log2(y_predict + eps)
+        log_not_p = np.log2(1 - y_predict + eps)
+        entropy = (-y * log_p - (1 - y) * log_not_p).sum(axis=0)
 
-    return perplexity_per_rank.mean() if aggregate else perplexity_per_rank
+        self.entropy = entropy if self.entropy is None else self.entropy + entropy
+        self.n_sessions += len(y)
+
+    def compute(self, aggregate: bool = True) -> Union[float, np.ndarray]:
+        perplexity_at_rank = 2 ** (self.entropy / self.n_sessions)
+        return perplexity_at_rank.mean() if aggregate else perplexity_at_rank

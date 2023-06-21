@@ -4,13 +4,14 @@ from typing import Dict
 
 import jax.numpy as jnp
 import numpy as np
-import pandas as pd
 from jax import jit, Array
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ultr_toolbox.data import ClickDataset, np_collate
-from ultr_toolbox.metrics.click_metrics import perplexity, binary_cross_entropy
+from ultr_toolbox.metrics.click_metrics import (
+    Perplexity,
+)
 from ultr_toolbox.models.base import Trainer
 
 
@@ -35,21 +36,17 @@ class CTRTrainer(Trainer):
 
     def test(self, dataset: ClickDataset) -> Dict:
         loader = DataLoader(dataset, batch_size=self.n_batch, collate_fn=np_collate)
-        metrics = []
+        perplexity = Perplexity()
 
         for batch in tqdm(loader, "Testing"):
             x, y = batch
             y_predict = self.model.predict(self.model_state, x)
-            metric = {
-                "perplexity": perplexity(y_predict, y),
-                "cross_entropy": binary_cross_entropy(y_predict, y),
-            }
-            metrics.append(metric)
+            perplexity.update(y_predict, y)
 
-        return pd.DataFrame(metrics).mean(axis=0).to_dict()
+        return {"perplexity": perplexity.compute()}
 
 
-class GlobalModel(CTRModel):
+class RandomModel(CTRModel):
     def params(self, dataset: ClickDataset) -> Dict:
         return {"ctr": dataset.y.mean()}
 
@@ -89,7 +86,6 @@ class DocumentBasedModel(CTRModel):
         }
 
     @staticmethod
-    @jit
     def predict(params: Dict, x: Array) -> Array:
         return jnp.take(params["ctr_per_doc"], x, fill_value=params["prior_ctr"])
 
