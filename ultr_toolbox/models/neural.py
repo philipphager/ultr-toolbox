@@ -97,7 +97,7 @@ class NeuralTrainer(Trainer):
 
         for batch in tqdm(loader, "Testing"):
             x, y = batch
-            y_predict = self.model_state.apply_fn(self.model_state.params, x)
+            y_predict = self._test_step(self.model_state, batch)
             perplexity.update(y_predict, y)
 
         return {"perplexity": perplexity.compute()}
@@ -148,6 +148,15 @@ class NeuralTrainer(Trainer):
         return {
             "loss": binary_cross_entropy(y_predict, y),
         }
+
+    @partial(jit, static_argnums=(0,))
+    def _test_step(
+        self,
+        state: TrainState,
+        batch: Tuple[Array, Array],
+    ):
+        x, y = batch
+        return state.apply_fn(state.params, x)
 
 
 class PositionBasedModel(nn.Module):
