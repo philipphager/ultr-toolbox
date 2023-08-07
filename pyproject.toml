@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "ultr-toolbox"
+version = "0.1.0"
+description = ""
+authors = ["Philipp Hager <philipp.konstantin.hager@gmail.com>"]
+readme = "README.md"
+packages = [{include = "ultr_toolbox"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+jax = "^0.4.14"
+optax = "^0.1.7"
+flax = "^0.7.1"
+torch = "^2.0.1"
+pandas = "^2.0.3"
+pyarrow = "^12.0.1"
+tqdm = "^4.65.0"
+pyclick = {git = "https://github.com/markovi/PyClick"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
