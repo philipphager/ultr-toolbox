@@ -8,7 +8,7 @@ packages = [{include = "ultr_toolbox"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-jax = "^0.4.1"
+jax = "^0.4.13"
 flax = "^0.7.1"
 optax = "^0.1.7"
 pandas = "^2.0.3"
