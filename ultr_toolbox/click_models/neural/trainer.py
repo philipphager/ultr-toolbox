@@ -20,7 +20,7 @@ class NeuralTrainer:
         self,
         model: nn.Module,
         optimizer: Callable = optax.adam(learning_rate=0.001),
-        early_stopping: EarlyStopping = EarlyStopping(min_delta=0.0001, patience=3),
+        early_stopping: EarlyStopping = EarlyStopping(min_delta=0.0001, patience=1),
         max_epochs: int = 250,
         n_batch: int = 512,
         n_workers: int = 4,
