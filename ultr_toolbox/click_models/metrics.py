@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 import numpy as np
+import pandas as pd
 
 
 class Metric(ABC):
@@ -49,18 +50,19 @@ class Perplexity(Metric):
 
 class LogLikelihood(Metric):
     def __init__(self):
-        super().__init__("loglikelihood")
+        super().__init__("log-likelihood")
         self.entropy = 0
         self.n_sessions = 0
 
     def update(self, y_predict: np.ndarray, y: np.ndarray, eps: float = 1e-10):
         y_predict = np.atleast_2d(y_predict)
         y = np.atleast_2d(y)
+        n_batch, n_ranks = y.shape
 
         log_p = np.log(y_predict + eps)
         log_not_p = np.log(1 - y_predict + eps)
         self.entropy += (y * log_p + (1 - y) * log_not_p).sum()
-        self.n_sessions += len(y)
+        self.n_sessions += n_batch * n_ranks
 
     def compute(
         self,
