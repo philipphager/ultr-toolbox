@@ -109,7 +109,7 @@ class JointModel(StatsModel):
         impressions = defaultdict(lambda: self.prior_impressions)
 
         for i, (x, y) in enumerate(zip(dataset.x, dataset.y)):
-            key = x.tobytes()
+            key = "_".join(map(str, x))
             clicks[key] += y
             impressions[key] += 1
 
@@ -120,7 +120,7 @@ class JointModel(StatsModel):
         y_predict = np.zeros_like(x, dtype=float)
 
         for i, x in enumerate(x):
-            key = x.tobytes()
+            key = "_".join(map(str, x))
             y_predict[i, :] = params["clicks"][key] / params["impressions"][key]
 
         return y_predict
