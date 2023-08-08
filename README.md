@@ -1,7 +1,11 @@
+## Install
+```bash
+pip install ultr-toolbox
+```
+
 ## Click Models
 
 ### Create Datasets
-
 ```Python
 from ultr_toolbox.click_models.data import ClickDataset
 
@@ -22,6 +26,13 @@ metrics = trainer.test(test_dataset, metrics=[Perplexity()])
 ```
 
 ### Train PyClick models
+To optionally train click models from the [PyClick](https://github.com/markovi/PyClick) library,
+first install PyClick as a dependency:
+```bash
+pip install git+https://github.com/markovi/PyClick
+```
+
+Next, you can use the `PyClickTrainer` module to run the same pipeline as for the Jax-based neural click models:
 ```
 from pyclick.click_models import PBM
 
