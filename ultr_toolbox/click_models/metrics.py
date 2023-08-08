@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 import numpy as np
-import pandas as pd
+from sklearn.metrics import roc_auc_score
 
 
 class Metric(ABC):
@@ -50,7 +50,7 @@ class Perplexity(Metric):
 
 class LogLikelihood(Metric):
     def __init__(self):
-        super().__init__("log-likelihood")
+        super().__init__("log_likelihood")
         self.entropy = 0
         self.n_sessions = 0
 
@@ -68,3 +68,26 @@ class LogLikelihood(Metric):
         self,
     ) -> Union[float, np.ndarray]:
         return self.entropy / self.n_sessions
+
+
+class RocAuc(Metric):
+    def __init__(self, aggregate_ranks: bool = True):
+        name = "roc_auc" if aggregate_ranks else "roc_auc_at_k"
+        super().__init__(name)
+        self.aggregate_ranks = aggregate_ranks
+        self.scores = []
+
+    def update(self, y_predict: np.ndarray, y: np.ndarray, eps: float = 1e-10):
+        if self.aggregate_ranks:
+            scores = roc_auc_score(y.ravel(), y_predict.ravel())
+        else:
+            n_ranks = y.shape[1]
+            scores = [roc_auc_score(y[:, i], y_predict[:, i]) for i in range(n_ranks)]
+
+        self.scores.append(scores)
+
+    def compute(
+        self,
+    ) -> Union[float, np.ndarray]:
+        scores = np.array(self.scores)
+        return np.mean(scores) if self.aggregate_ranks else np.mean(scores, axis=0)

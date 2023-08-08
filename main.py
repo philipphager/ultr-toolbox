@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from ultr_toolbox.click_models.data import ClickDataset
-from ultr_toolbox.click_models.metrics import Perplexity, LogLikelihood
+from ultr_toolbox.click_models.metrics import Perplexity, LogLikelihood, RocAuc
 from ultr_toolbox.click_models.neural import (
     PositionBasedModel,
     UserBrowsingModel,
@@ -50,7 +50,13 @@ def main():
     results = []
 
     for name, model in models.items():
-        metrics = [Perplexity(), Perplexity(aggregate_ranks=False), LogLikelihood()]
+        metrics = [
+            Perplexity(),
+            Perplexity(aggregate_ranks=False),
+            LogLikelihood(),
+            RocAuc(),
+            RocAuc(aggregate_ranks=False),
+        ]
 
         if isinstance(model, StatsModel):
             trainer = StatsTrainer(model)
