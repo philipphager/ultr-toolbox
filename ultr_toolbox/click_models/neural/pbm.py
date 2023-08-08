@@ -2,8 +2,10 @@ import jax.numpy as jnp
 from flax import linen as nn
 from jax import Array
 
+from ultr_toolbox.click_models.neural.base import NeuralModel
 
-class PositionBasedModel(nn.Module):
+
+class PositionBasedModel(NeuralModel):
     n_items: int
     n_ranks: int
 

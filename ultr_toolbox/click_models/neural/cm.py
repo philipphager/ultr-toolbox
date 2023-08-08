@@ -2,12 +2,14 @@ import jax.numpy as jnp
 from flax import linen as nn
 from jax import Array
 
+from ultr_toolbox.click_models.neural.base import NeuralModel
 
-class CascadeModel(nn.Module):
-    n_documents: int
+
+class CascadeModel(NeuralModel):
+    n_items: int
 
     def setup(self) -> None:
-        self.relevance = nn.Sequential([nn.Embed(self.n_documents, 1), nn.sigmoid])
+        self.relevance = nn.Sequential([nn.Embed(self.n_items, 1), nn.sigmoid])
 
     def __call__(self, x: Array, *args) -> Array:
         relevance = self.relevance(x).squeeze()
