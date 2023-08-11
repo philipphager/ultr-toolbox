@@ -1,5 +1,5 @@
+import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 from ultr_toolbox.click_models.data import ClickDataset
 from ultr_toolbox.click_models.metrics import Perplexity, LogLikelihood, RocAuc
@@ -9,6 +9,7 @@ from ultr_toolbox.click_models.neural import (
     CascadeModel,
     DynamicBayesianNetwork,
     NeuralTrainer,
+    DependentClickModel,
 )
 from ultr_toolbox.click_models.neural.base import NeuralModel
 from ultr_toolbox.click_models.stats import (
@@ -16,20 +17,20 @@ from ultr_toolbox.click_models.stats import (
     RankBasedModel,
     JointModel,
     RankDocumentBasedModel,
-    DocumentBasedModel, StatsTrainer,
+    DocumentBasedModel,
+    StatsTrainer,
 )
 from ultr_toolbox.click_models.stats.models import StatsModel
 
 
 def main():
-    df = pd.read_parquet("data/yandex-sample.parquet")
+    train_df = pd.read_pickle("data/train-eps.pckl")
+    val_df = pd.read_pickle("data/val-eps.pckl")
+    test_df = pd.read_pickle("data/test-eps.pckl")
 
-    train_df, test_df = train_test_split(df, random_state=0)
-    train_df, val_df = train_test_split(train_df, random_state=0)
-
-    train_dataset = ClickDataset(train_df, "doc_ids", "click")
-    val_dataset = ClickDataset(val_df, "doc_ids", "click")
-    test_dataset = ClickDataset(test_df, "doc_ids", "click")
+    train_dataset = ClickDataset(train_df)
+    val_dataset = ClickDataset(val_df)
+    test_dataset = ClickDataset(test_df)
 
     n_items = train_dataset.n_items()
     n_ranks = train_dataset.n_ranks()
@@ -42,12 +43,14 @@ def main():
         "JCTR": JointModel(),
         "PBM": PositionBasedModel(n_items=n_items, n_ranks=n_ranks),
         "CM": CascadeModel(n_items=n_items),
+        "DCM": DependentClickModel(n_items=n_items),
         "UBM": UserBrowsingModel(n_items=n_items, n_ranks=n_ranks),
         "DBN": DynamicBayesianNetwork(n_items=n_items),
         "SDBN": DynamicBayesianNetwork(n_items=n_items, estimate_continuation=False),
     }
 
     results = []
+    predictions = []
 
     for name, model in models.items():
         metrics = [
@@ -71,6 +74,20 @@ def main():
         results.append(metrics)
         df = pd.DataFrame(results)
         df.to_parquet("results.parquet")
+
+        y_predict = trainer.predict(test_dataset)
+        prediction_df = pd.DataFrame(
+            {
+                "model": name,
+                "x": list(np.array(test_dataset.x)),
+                "y": list(np.array(test_dataset.y)),
+                "y_predict": list(np.array(y_predict)),
+            }
+        )
+
+        predictions.append(prediction_df)
+        prediction_df = pd.concat(predictions)
+        prediction_df.to_parquet("predictions.parquet")
 
     print(df.to_string())
 
