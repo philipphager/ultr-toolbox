@@ -2,6 +2,7 @@ from functools import partial
 from typing import Callable, Tuple, Dict, Mapping, List
 
 import jax
+import jax.numpy as jnp
 import optax
 from flax import linen as nn
 from flax.training.early_stopping import EarlyStopping
@@ -36,8 +37,8 @@ class NeuralTrainer:
         self.model_state = None
 
     def fit(self, train_dataset: ClickDataset, val_dataset: ClickDataset):
-        train_loader = self._get_dataloader(train_dataset, shuffle=True)
-        val_loader = self._get_dataloader(val_dataset)
+        train_loader = self._get_dataloader(train_dataset, self.n_batch, shuffle=True)
+        val_loader = self._get_dataloader(val_dataset, self.n_batch)
 
         # Initialize model
         key = jax.random.PRNGKey(self.random_state)
@@ -72,7 +73,7 @@ class NeuralTrainer:
         self.model_state = best_model_state
 
     def test(self, dataset: ClickDataset, metrics: List[Metric]) -> Dict:
-        loader = self._get_dataloader(dataset, parallelize=False)
+        loader = self._get_dataloader(dataset, 10_000, parallelize=False)
 
         for batch in tqdm(loader, "Testing"):
             x, y = batch
@@ -83,15 +84,26 @@ class NeuralTrainer:
 
         return {metric.name: metric.compute() for metric in metrics}
 
+    def predict(self, dataset: ClickDataset):
+        loader = self._get_dataloader(dataset, 10_000, parallelize=False)
+        y_predicts = []
+
+        for batch in tqdm(loader, "Predicting"):
+            y_predict = self._test_step(self.model_state, batch)
+            y_predicts.append(y_predict)
+
+        return jnp.vstack(y_predicts)
+
     def _get_dataloader(
         self,
         dataset: ClickDataset,
+        batch_size: int,
         shuffle: bool = False,
         parallelize: bool = True,
     ) -> DataLoader:
         return DataLoader(
             dataset,
-            batch_size=self.n_batch,
+            batch_size=batch_size,
             collate_fn=np_collate,
             num_workers=self.n_workers if parallelize else 1,
             persistent_workers=parallelize,
@@ -133,5 +145,4 @@ class NeuralTrainer:
         batch: Tuple[Array, Array],
     ):
         x, y = batch
-
         return state.apply_fn(state.params, x, y)
